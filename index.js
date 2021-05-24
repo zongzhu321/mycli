@@ -7,20 +7,74 @@
 const { Command } = require('commander');
 const program = new Command();
 
+const download = require('download-git-repo');
+const inquirer = require('inquirer');
+const handlebars = require('handlebars');
+
 program
   .version('0.1.0')
+
+// 定义模板列表
+const templates = {
+  'tpl-a': {
+    url: 'https://github.com/zongzhu321/tpl-a',
+    downloadUrl: 'http://github.com:zongzhu321/tpl-a#main',
+    description: '模板 A'
+  },
+  'tpl-b': {
+    url: 'https://github.com/zongzhu321/tpl-b',
+    downloadUrl: 'http://github.com:zongzhu321/tpl-b#main',
+    description: '模板 B'
+  }
+};
 
 program
   .command('init <template> <project>')
   .description('初始化项目模板')
   .action((templateName, projectName) => {
     // 根据模板名下载对应的模板到本地并起名为 projectName
-    console.log(templateName, projectName)
+    //  第一个参数：仓库地址
+    //  第二个参数：下载路径
+    const { downloadUrl } = templates[templateName]
+    download(downloadUrl, projectName, (err) => {
+      if (err) {
+        console.log('下载失败')
+        return
+      } else {
+        console.log('下载成功')
+        // 把项目下的package.json 文件读取出来
+        // 使用向导的方式采集用户输入的值
+        // 使用模板引擎把用户输入的数据解析到 package.json
+        // 解析完毕，把解析之后的结果重新写入 package.json
+        require.prompt([{
+          type: 'input',
+          name: 'name',
+          message: '请输入项目名称'
+        },{
+          type: 'input',
+          name: 'description',
+          message: '请输入项目描述'
+        },{
+          type: 'input',
+          name: 'author',
+          message: '请输入作者名称'
+        }]).then((answers) => {
+          console.log(22,answers.author)
+        })
+      }
+    })
   });
+
 program
   .command('list')
   .description('查看所有可用模板')
-  .action()
-  
+  .action(() => {
+    for (let key in templates) {
+      console.log(`
+        ${key} ${templates[key].description}
+      `)
+    }
+  })
+
 program.parse(process.argv);
 
