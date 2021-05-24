@@ -10,6 +10,8 @@ const program = new Command();
 const download = require('download-git-repo');
 const inquirer = require('inquirer');
 const handlebars = require('handlebars');
+const ora = require('ora');
+const fs = require('fs')
 
 program
   .version('0.1.0')
@@ -35,31 +37,40 @@ program
     // 根据模板名下载对应的模板到本地并起名为 projectName
     //  第一个参数：仓库地址
     //  第二个参数：下载路径
+    // 开始下载
+    const spinner = ora('正在下载模板...');
     const { downloadUrl } = templates[templateName]
     download(downloadUrl, projectName, (err) => {
+      spinner.start();
       if (err) {
-        console.log('下载失败')
+        // 下载失败调用
+        spinner.fail();
         return
       } else {
-        console.log('下载成功')
+        // 下载成功调用
+        spinner.succeed();
         // 把项目下的package.json 文件读取出来
         // 使用向导的方式采集用户输入的值
         // 使用模板引擎把用户输入的数据解析到 package.json
         // 解析完毕，把解析之后的结果重新写入 package.json
-        require.prompt([{
+        inquirer.prompt([{
           type: 'input',
           name: 'name',
           message: '请输入项目名称'
-        },{
+        }, {
           type: 'input',
           name: 'description',
           message: '请输入项目描述'
-        },{
+        }, {
           type: 'input',
           name: 'author',
           message: '请输入作者名称'
         }]).then((answers) => {
-          console.log(22,answers.author)
+          const packagePath = `${projectName}/package.json`
+          const packageContent = fs.readFileSync(packagePath, 'utf8')
+          const packageResult = handlebars.compile(packageContent)(answers)
+          fs.writeFileSync(packagePath, packageResult)
+          console.log('初始化模板成功')
         })
       }
     })
